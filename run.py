@@ -6,6 +6,7 @@ import inspect
 import json
 from pathlib import Path
 import time
+import math
 
 import typing
 import itertools
@@ -15,7 +16,7 @@ import os
 import googleapiclient.discovery
 from functools import partial
 
-from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api import YouTubeTranscriptApi, CouldNotRetrieveTranscript
 
 
 from dotenv import load_dotenv
@@ -68,7 +69,7 @@ class TranscriptItem(typing.TypedDict):
     duration: float
 
 
-def get_transcript(video_id: str) -> list[TranscriptItem]:
+def get_transcript(video_id: str) -> list[TranscriptItem] :
     transcript = YouTubeTranscriptApi.get_transcript(video_id)
     return transcript
 
@@ -149,13 +150,28 @@ def main():
 
     videos_gen = get_videos()
 
+    failures = []
+
     for videos in ichunk(videos_gen, 10):
         # avoid getting rate limited, do 10 at a time then sleep
         time.sleep(1)
 
         for video in videos:
-            transcript = cached_get_transcript(video["id"])
-            debug(f'title={video["title"]}', video, transcript)
+            try:
+                transcript = cached_get_transcript(video["id"])
+                debug(
+                    f'title={video["title"]}',
+                    video,
+                    # kinda sorta nicer formatting while debugging
+                    [f"[t{math.floor(t['start'])}+{math.ceil(t['duration'])}] -- {t['text']}" for t in transcript]
+
+                )
+            except CouldNotRetrieveTranscript as e:
+                failures.append(e)
+
+    for e in failures:
+        debug(e)
+
 
 
 if __name__ == "__main__":
