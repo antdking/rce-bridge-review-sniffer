@@ -159,11 +159,16 @@ def main():
         for video in videos:
             try:
                 transcript = cached_get_transcript(video["id"])
+
+                # kinda sorta nicer formatting while debugging
+                truncated_transcripts = (
+                    [f"[t{math.floor(t['start'])}+{math.ceil(t['duration'])}] -- {t['text']}" for t in (transcript[:3])]
+                    + [f"... Skipping {len(transcript) - 6} entries ..."]
+                    + [f"[t{math.floor(t['start'])}+{math.ceil(t['duration'])}] -- {t['text']}" for t in (transcript[-3:])]
+                )
                 debug(
-                    f'title={video["title"]}',
                     video,
-                    # kinda sorta nicer formatting while debugging
-                    [f"[t{math.floor(t['start'])}+{math.ceil(t['duration'])}] -- {t['text']}" for t in transcript]
+                    truncated_transcripts
 
                 )
             except CouldNotRetrieveTranscript as e:
