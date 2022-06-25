@@ -156,7 +156,6 @@ def main():
         for video in videos:
             transcript = cached_get_transcript(video["id"])
             debug(f'title={video["title"]}', video, transcript)
-        break
 
 
 if __name__ == "__main__":
