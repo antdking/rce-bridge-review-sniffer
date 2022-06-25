@@ -147,6 +147,8 @@ def main():
     os.makedirs(CACHE_DIR, exist_ok=True)
     cache = JSONFileStore(CACHE_DIR, pretty=True)
     cached_get_transcript = cache.memoize(tag='transcript')(get_transcript)
+    (cache.dir_path / 'video').mkdir(exist_ok=True)
+    cache_video = lambda video: cache.set('video', video['id'], video)
 
     videos_gen = get_videos()
 
@@ -154,9 +156,11 @@ def main():
 
     for videos in ichunk(videos_gen, 10):
         # avoid getting rate limited, do 10 at a time then sleep
-        time.sleep(1)
+        time.sleep(0.2)
 
         for video in videos:
+            # just get the video data onto the filesystem
+            cache_video(video)
             try:
                 transcript = cached_get_transcript(video["id"])
 
@@ -172,10 +176,11 @@ def main():
 
                 )
             except CouldNotRetrieveTranscript as e:
-                failures.append(e)
+                failures.append((video, e))
 
-    for e in failures:
-        debug(e)
+    for video, py_error in failures:
+        pretty_error = str(py_error)
+        debug(video, pretty_error)
 
 
 
