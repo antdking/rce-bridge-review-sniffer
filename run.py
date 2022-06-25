@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
 from __future__ import annotations
+from dataclasses import dataclass, field
+import inspect
+import json
+from pathlib import Path
 import time
 
 import typing
@@ -9,8 +13,9 @@ import itertools
 
 import os
 import googleapiclient.discovery
+from functools import partial
 
-from youtube_transcript_api import YouTubeTranscriptApi, TranscriptList
+from youtube_transcript_api import YouTubeTranscriptApi
 
 
 from dotenv import load_dotenv
@@ -26,10 +31,7 @@ if typing.TYPE_CHECKING:
 RCE_CHANNEL_ID = 'UCeP4Yv3s4RvS0-6d9OInRMw'
 RCE_UPLOADS_PLAYLIST = 'UUeP4Yv3s4RvS0-6d9OInRMw'
 GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
-
-some_video_ids = ["5NiuwWwO2Ng", '1IflykOzLLY', 'iqEcbLz0Q-w']
-
-
+CACHE_DIR = '.rce-cache'
 
 
 def get_youtube_api(key=GOOGLE_API_KEY) -> YouTubeResource:
@@ -80,9 +82,70 @@ def ichunk(iterable, size):
         yield chunk
 
 
+@dataclass()
+class JSONFileStore:
+    dir: str
+    pretty: bool = field(default=False)
+
+    dir_path: Path = field(init=False)
+    json_dump: typing.Callable = field(init=False)
+
+    _MISS = object()
+
+    def __post_init__(self):
+        self.dir_path = Path(self.dir)
+        self.dir_path.mkdir(parents=True, exist_ok=True)
+
+        if self.pretty:
+            self.json_dump = partial(json.dump, sort_keys=True, indent=4)
+        else:
+            self.json_dump = json.dump
+
+    def memoize(self, func=None, *, tag: str):
+        if func is None:
+            return partial(self.memoize, tag=tag)
+
+        # setup the tag, hacky
+        (self.dir_path / tag).mkdir(exist_ok=True)
+
+        sig = inspect.signature(func)
+
+        assert len(sig.parameters) == 1, "keep it simple for now"
+
+        def inner(arg1):
+            cached = self.get(tag, arg1)
+            if cached is self._MISS:
+                return self.set(tag, arg1, func(arg1))
+            return cached
+
+        return inner
+
+    def get(self, tag: str, key: str):
+        f_path = self.dir_path / tag / f"{key}.json"
+
+        try:
+            with f_path.open() as f:
+                return json.load(f)
+        except FileNotFoundError:
+            return self._MISS
+
+
+    def set(self, tag: str, key: str, val):
+        f_path = self.dir_path / tag / f"{key}.json"
+
+        with f_path.open(mode='w') as f:
+            self.json_dump(val, f)
+
+        # ensure we're consistent
+        return self.get(tag, key)
+
+
 
 def main():
     from devtools import debug
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    cache = JSONFileStore(CACHE_DIR, pretty=True)
+    cached_get_transcript = cache.memoize(tag='transcript')(get_transcript)
 
     videos_gen = get_videos()
 
@@ -91,7 +154,7 @@ def main():
         time.sleep(1)
 
         for video in videos:
-            transcript = get_transcript(video["id"])
+            transcript = cached_get_transcript(video["id"])
             debug(f'title={video["title"]}', video, transcript)
         break
 

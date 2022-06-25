@@ -16,7 +16,7 @@ python-dotenv = "^0.20.0"
 devtools = {extras = ["pygments"], version = "^0.8.0"}
 
 
-[tool.poetry.group.dev.dependencies]
+[tool.poetry.dev-dependencies]
 google-api-python-client-stubs = "^1.11.0"
 
 [build-system]

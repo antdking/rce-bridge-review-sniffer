@@ -353,7 +353,7 @@ requests = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "b2ebedf3a559cf21dd15b55e9929da957b8a8b847dbb806acd195ef3de083429"
+content-hash = "ee066e3eca816eb4f4ab4cff83aba0220ed21d31232bb7e8c98e1c37e468a57a"
 
 [metadata.files]
 asttokens = [
