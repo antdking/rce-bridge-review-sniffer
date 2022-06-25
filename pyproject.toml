@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "bridge-review-scrape"
+version = "0.1.0"
+description = ""
+authors = ["Anthony King <anthony@opendiro.io>"]
+readme = "README.md"
+packages = [{include = "bridge_review_scrape"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+youtube-transcript-api = "^0.4.4"
+google-api-python-client = "^2.51.0"
+google-auth-oauthlib = "^0.5.2"
+google-auth-httplib2 = "^0.1.0"
+python-dotenv = "^0.20.0"
+devtools = {extras = ["pygments"], version = "^0.8.0"}
+
+
+[tool.poetry.group.dev.dependencies]
+google-api-python-client-stubs = "^1.11.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
