@@ -1,4 +1,4 @@
-# RCE Words Scraper
+# RCE Words Sniffer
 
 Scrape all the words that RCE has ever said.
 
