@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from __future__ import annotations
+import time
 
 import typing
 import itertools
@@ -8,6 +9,8 @@ import itertools
 
 import os
 import googleapiclient.discovery
+
+from youtube_transcript_api import YouTubeTranscriptApi, TranscriptList
 
 
 from dotenv import load_dotenv
@@ -57,6 +60,17 @@ def get_videos():
         }
 
 
+class TranscriptItem(typing.TypedDict):
+    text: str
+    start: float
+    duration: float
+
+
+def get_transcript(video_id: str) -> list[TranscriptItem]:
+    transcript = YouTubeTranscriptApi.get_transcript(video_id)
+    return transcript
+
+
 def ichunk(iterable, size):
     it = iter(iterable)
     while True:
@@ -73,7 +87,13 @@ def main():
     videos_gen = get_videos()
 
     for videos in ichunk(videos_gen, 10):
-        debug(videos)
+        # avoid getting rate limited, do 10 at a time then sleep
+        time.sleep(1)
+
+        for video in videos:
+            transcript = get_transcript(video["id"])
+            debug(f'title={video["title"]}', video, transcript)
+        break
 
 
 if __name__ == "__main__":
